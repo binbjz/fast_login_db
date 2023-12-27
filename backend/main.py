@@ -129,6 +129,9 @@ async def login(request: UserLogin, db: AsyncSession = Depends(get_db)):
     db_user = await db.execute(query)
     db_user = db_user.fetchone()
 
+    if not db_user:
+        raise HTTPException(status_code=404, detail="该用户不存在,请注册后重新登录")
+
     if db_user and bcrypt.checkpw(request.password.encode(), db_user[0].encode()):
         return {"msg": "Login successful"}
     else:
