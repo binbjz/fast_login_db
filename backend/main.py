@@ -96,11 +96,11 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     :return: UserInDB, returns registered user information.
     """
     query = select(User).where(text("username = :username")).params(username=user.username)
-    db_user = await db.execute(query)
-    db_user = db_user.fetchone()
+    result = await db.execute(query)
+    db_user_tuple = result.first()
 
-    if db_user:
-        raise HTTPException(status_code=400, detail="Username already exists")
+    if db_user_tuple:
+        raise HTTPException(status_code=400, detail="该用户已存在")
 
     hashed_password = bcrypt.hashpw(user.password.encode(), bcrypt.gensalt())
     db_user = User(username=user.username, password=hashed_password.decode())
@@ -111,8 +111,7 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
         await db.refresh(db_user)
     except Exception as ex:
         await db.rollback()
-        raise HTTPException(status_code=500,
-                            detail=f"Error interacting with the database during registration: {str(ex)}")
+        raise HTTPException(status_code=500, detail=f"注册-操作数据库错误: {str(ex)}")
 
     return UserInDB(id=db_user.id, username=db_user.username)
 
@@ -125,14 +124,15 @@ async def login(request: UserLogin, db: AsyncSession = Depends(get_db)):
     :param db: AsyncSession, a database session.
     :return: Dictionary, contains login message.
     """
-    query = select(User.password).where(text("username = :username")).params(username=request.username)
-    db_user = await db.execute(query)
-    db_user = db_user.fetchone()
+    query = select(User).where(text("username = :username")).params(username=request.username)
+    result = await db.execute(query)
+    db_user_tuple = result.first()
 
-    if not db_user:
+    if not db_user_tuple:
         raise HTTPException(status_code=404, detail="该用户不存在,请注册后重新登录")
 
-    if db_user and bcrypt.checkpw(request.password.encode(), db_user[0].encode()):
-        return {"msg": "Login successful"}
+    db_user = db_user_tuple[0]
+    if bcrypt.checkpw(request.password.encode(), db_user.password.encode()):
+        return {"msg": "登录成功", "username": db_user.username}
     else:
-        raise HTTPException(status_code=401, detail="Incorrect username or password")
+        raise HTTPException(status_code=401, detail="用户名或密码不正确")
