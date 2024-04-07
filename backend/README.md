@@ -4,5 +4,5 @@
 
 ```sh
 $ python -m venv venv && source venv/bin/activate
-$ pip install fastapi uvicorn[standard] httpx bcrypt SQLAlchemy asyncpg psycopg2
+$ pip install fastapi uvicorn[standard] httpx bcrypt SQLAlchemy asyncpg greenlet
 ```
