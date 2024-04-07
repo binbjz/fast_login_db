@@ -21,7 +21,7 @@
 
 <script>
 import axios from "axios"
-import "./shared_styles.css"
+import "./auth_forms.css"
 
 export default {
   name: "App",
