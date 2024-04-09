@@ -1,4 +1,4 @@
-# fast register and login with FastAPI and Vue.js
+# fast register and login with FastAPI、PostgreSQL and Vue.js
 
 ---
 
