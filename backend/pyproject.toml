@@ -1,0 +1,15 @@
+[project]
+name = "fast_login_db"
+version = "0.1.0"
+description = "Fast registre and login"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "asyncpg>=0.30.0",
+    "bcrypt>=4.2.1",
+    "fastapi>=0.115.8",
+    "greenlet>=3.1.1",
+    "httpx>=0.28.1",
+    "sqlalchemy>=2.0.38",
+    "uvicorn[standard]>=0.34.0",
+]

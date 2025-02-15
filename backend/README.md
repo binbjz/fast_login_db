@@ -3,6 +3,6 @@
 ## Project setup
 
 ```sh
-$ python -m venv venv && source venv/bin/activate
-$ pip install fastapi uvicorn[standard] httpx bcrypt SQLAlchemy asyncpg greenlet
+$ uv venv --python 3.13.2
+$ uv sync
 ```

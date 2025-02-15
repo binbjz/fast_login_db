@@ -1,5 +1,7 @@
 .idea*
 .DS_Store
 *.pyc
-**/__pycache__
-
+**/__pycache__/
+build/
+*.egg-info/
+uv.lock
