@@ -1,7 +1,7 @@
 [project]
 name = "fast_login_db"
 version = "0.1.0"
-description = "Fast registre and login"
+description = "Fast register and login"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
