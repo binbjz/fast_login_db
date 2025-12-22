@@ -7,21 +7,23 @@
 <script>
 import axios from 'axios';
 
+const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8000';
+
 export default {
   props: ['username', 'password'],
   methods: {
     async register() {
       try {
-        await axios.post('http://localhost:8000/users/', {
+        await axios.post(`${API_BASE_URL}/users/`, {
           username: this.username,
           password: this.password,
         });
-        alert('注册成功');
+        this.$emit('toast', { type: 'success', message: '注册成功' });
       } catch (error) {
-        alert('注册失败: ' + error.response.data.detail);
+        const message = error?.response?.data?.detail || error?.message || '请求失败';
+        this.$emit('toast', { type: 'error', message: `注册失败: ${message}` });
       }
     },
   },
 };
 </script>
-

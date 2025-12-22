@@ -22,3 +22,14 @@ npm run serve
 
 Starting the FastAPI backend and Vue.js frontend for a typical web application project.
 
+---
+
+### Start everything with Docker (frontend + backend + database)
+
+```sh
+docker compose up --build
+```
+
+Then open the app at:
+- Frontend: http://localhost:8080
+- Backend: http://localhost:8000

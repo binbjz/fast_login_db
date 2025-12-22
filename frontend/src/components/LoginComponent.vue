@@ -7,21 +7,24 @@
 <script>
 import axios from 'axios';
 
+const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8000';
+
 export default {
   props: ['username', 'password'],
   methods: {
     async login() {
       try {
-        await axios.post('http://localhost:8000/login/', {
+        const response = await axios.post(`${API_BASE_URL}/login/`, {
           username: this.username,
           password: this.password,
         });
-        alert('登录成功');
+        const message = response?.data?.msg || '登录成功';
+        this.$emit('toast', { type: 'success', message });
       } catch (error) {
-        alert('登录失败: ' + error.response.data.detail);
+        const message = error?.response?.data?.detail || error?.message || '请求失败';
+        this.$emit('toast', { type: 'error', message: `登录失败: ${message}` });
       }
     },
   },
 };
 </script>
-

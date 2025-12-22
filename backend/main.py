@@ -1,3 +1,4 @@
+import os
 import bcrypt
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends
@@ -21,17 +22,22 @@ async def app_lifespan(app_instance: FastAPI):
 
 app = FastAPI(lifespan=app_lifespan, debug=True)
 
-origins = [
-    "http://localhost:8080",
-    "http://192.168.3.6:8080",
-    # "http://localhost",
-    # "http://192.168.0.142:8080"
-]
+CORS_ALLOW_ALL = os.getenv("CORS_ALLOW_ALL", "").lower() in {"1", "true", "yes"}
+raw_origins = os.getenv("CORS_ALLOW_ORIGINS", "")
+if raw_origins.strip():
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+else:
+    origins = [
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://0.0.0.0:8080",
+        "http://192.168.65.1:8080",
+    ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"] if CORS_ALLOW_ALL else origins,
+    allow_credentials=False if CORS_ALLOW_ALL else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -76,4 +82,3 @@ async def login(request: UserLogin, db: AsyncSession = Depends(get_db)):
         return {"msg": "登录成功", "username": db_user.username}
     else:
         raise HTTPException(status_code=401, detail="用户名或密码不正确")
-

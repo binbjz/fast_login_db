@@ -1,15 +1,20 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+import os
+
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "postgresql+asyncpg://postgres:pg-auth@fl_postgres:5432/postgres"
+DEFAULT_DATABASE_URL = "postgresql+asyncpg://postgres:pg-auth@127.0.0.1:5432/postgres"
+DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+RESET_DB = os.getenv("RESET_DB", "false").lower() in {"1", "true", "yes"}
 primary_engine = create_async_engine(DATABASE_URL, echo=True, future=True)
 Base = declarative_base()
 
 
 async def setup_db():
     async with primary_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        if RESET_DB:
+            await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
 
