@@ -31,5 +31,5 @@ docker compose up --build
 ```
 
 Then open the app at:
-- Frontend: http://localhost:8080
-- Backend: http://localhost:8000
+- Frontend: http://127.0.0.1:8081
+- OpenAPI UI: http://127.0.0.1:8000/docs
