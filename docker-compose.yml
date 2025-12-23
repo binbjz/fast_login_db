@@ -34,6 +34,7 @@ services:
   frontend:
     build:
       context: ./frontend
+    init: true
     environment:
       CHOKIDAR_USEPOLLING: "true"
       VUE_APP_API_BASE_URL: "http://localhost:8000"

@@ -4,7 +4,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = isBinding;
-var _getBindingIdentifiers = require("../retrievers/getBindingIdentifiers");
+var _getBindingIdentifiers = require("../retrievers/getBindingIdentifiers.js");
 function isBinding(node, parent, grandparent) {
   if (grandparent && node.type === "Identifier" && parent.type === "ObjectProperty" && grandparent.type === "ObjectExpression") {
     return false;
@@ -15,7 +15,7 @@ function isBinding(node, parent, grandparent) {
       const key = keys[i];
       const val = parent[key];
       if (Array.isArray(val)) {
-        if (val.indexOf(node) >= 0) return true;
+        if (val.includes(node)) return true;
       } else {
         if (val === node) return true;
       }

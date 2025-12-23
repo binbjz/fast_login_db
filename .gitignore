@@ -5,4 +5,4 @@
 build/
 *.egg-info/
 uv.lock
-**/node_modules/.cache/
+**/node_modules/

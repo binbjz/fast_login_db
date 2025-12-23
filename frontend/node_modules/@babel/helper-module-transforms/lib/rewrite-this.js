@@ -4,22 +4,19 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = rewriteThis;
-var _helperEnvironmentVisitor = require("@babel/helper-environment-visitor");
+var _core = require("@babel/core");
 var _traverse = require("@babel/traverse");
-var _t = require("@babel/types");
-const {
-  numericLiteral,
-  unaryExpression
-} = _t;
-const rewriteThisVisitor = _traverse.default.visitors.merge([_helperEnvironmentVisitor.default, {
-  ThisExpression(path) {
-    path.replaceWith(unaryExpression("void", numericLiteral(0), true));
-  }
-}]);
+let rewriteThisVisitor;
 function rewriteThis(programPath) {
-  (0, _traverse.default)(programPath.node, Object.assign({}, rewriteThisVisitor, {
-    noScope: true
-  }));
+  if (!rewriteThisVisitor) {
+    rewriteThisVisitor = _traverse.visitors.environmentVisitor({
+      ThisExpression(path) {
+        path.replaceWith(_core.types.unaryExpression("void", _core.types.numericLiteral(0), true));
+      }
+    });
+    rewriteThisVisitor.noScope = true;
+  }
+  (0, _traverse.default)(programPath.node, rewriteThisVisitor);
 }
 
 //# sourceMappingURL=rewrite-this.js.map

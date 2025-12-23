@@ -179,6 +179,11 @@ asn1.Type = {
 };
 
 /**
+ * Sets the default maximum recursion depth when parsing ASN.1 structures.
+ */
+asn1.maxDepth = 256;
+
+/**
  * Creates a new asn1 object.
  *
  * @param tagClass the tag class for the object.
@@ -419,6 +424,8 @@ var _getValueLength = function(bytes, remaining) {
  *            erroneously decode values that happen to be valid ASN.1. This
  *            flag will be deprecated or removed as soon as schema support is
  *            available. (default: true)
+ *          [maxDepth] override asn1.maxDepth recursion limit
+ *            (default: asn1.maxDepth)
  *
  * @throws Will throw an error for various malformed input conditions.
  *
@@ -448,6 +455,9 @@ asn1.fromDer = function(bytes, options) {
   if(!('decodeBitStrings' in options)) {
     options.decodeBitStrings = true;
   }
+  if(!('maxDepth' in options)) {
+    options.maxDepth = asn1.maxDepth;
+  }
 
   // wrap in buffer if needed
   if(typeof bytes === 'string') {
@@ -476,6 +486,12 @@ asn1.fromDer = function(bytes, options) {
  * @return the parsed asn1 object.
  */
 function _fromDer(bytes, remaining, depth, options) {
+
+  // check depth limit
+  if(depth >= options.maxDepth) {
+    throw new Error('ASN.1 parsing error: Max depth exceeded.');
+  }
+
   // temporary storage for consumption calculations
   var start;
 
@@ -773,6 +789,10 @@ asn1.oidToDer = function(oid) {
     last = true;
     valueBytes = [];
     value = parseInt(values[i], 10);
+    // TODO: Change bitwise logic to allow larger values.
+    if(value > 0xffffffff) {
+      throw new Error('OID value too large; max is 32-bits.');
+    }
     do {
       b = value & 0x7F;
       value = value >>> 7;
@@ -818,8 +838,13 @@ asn1.derToOid = function(bytes) {
   // the last byte for each value
   var value = 0;
   while(bytes.length() > 0) {
+    // error if 7b shift would exceed Number.MAX_SAFE_INTEGER
+    // (Number.MAX_SAFE_INTEGER / 128)
+    if(value > 0x3fffffffffff) {
+      throw new Error('OID value too large; max is 53-bits.');
+    }
     b = bytes.getByte();
-    value = value << 7;
+    value = value * 128;
     // not the last byte for the value
     if(b & 0x80) {
       value += b & 0x7F;
@@ -1165,22 +1190,65 @@ asn1.validate = function(obj, v, capture, errors) {
       if(v.value && forge.util.isArray(v.value)) {
         var j = 0;
         for(var i = 0; rval && i < v.value.length; ++i) {
-          rval = v.value[i].optional || false;
-          if(obj.value[j]) {
-            rval = asn1.validate(obj.value[j], v.value[i], capture, errors);
-            if(rval) {
-              ++j;
-            } else if(v.value[i].optional) {
+          var schemaItem = v.value[i];
+          rval = !!schemaItem.optional;
+
+          // current child in the object
+          var objChild = obj.value[j];
+
+          // if there is no child left to match
+          if(!objChild) {
+            // if optional, ok (rval already true), else fail below
+            if(!schemaItem.optional) {
+              rval = false;
+              if(errors) {
+                errors.push('[' + v.name + '] ' +
+                  'Missing required element. Expected tag class "' +
+                  schemaItem.tagClass + '", type "' + schemaItem.type + '"');
+              }
+            }
+            continue;
+          }
+
+          // If schema explicitly specifies tagClass/type, do a quick structural check
+          // to avoid unnecessary recursion/side-effects when tags clearly don't match.
+          var schemaHasTag = (typeof schemaItem.tagClass !== 'undefined' &&
+            typeof schemaItem.type !== 'undefined');
+
+          if(schemaHasTag &&
+            (objChild.tagClass !== schemaItem.tagClass || objChild.type !== schemaItem.type)) {
+            // Tags do not match.
+            if(schemaItem.optional) {
+              // Skip this schema element (don't consume objChild; don't call recursive validate).
               rval = true;
+              continue;
+            } else {
+              // Required schema item mismatched - fail.
+              rval = false;
+              if(errors) {
+                errors.push('[' + v.name + '] ' +
+                  'Tag mismatch. Expected (' +
+                  schemaItem.tagClass + ',' + schemaItem.type + '), got (' +
+                  objChild.tagClass + ',' + objChild.type + ')');
+              }
+              break;
             }
           }
-          if(!rval && errors) {
-            errors.push(
-              '[' + v.name + '] ' +
-              'Tag class "' + v.tagClass + '", type "' +
-              v.type + '" expected value length "' +
-              v.value.length + '", got "' +
-              obj.value.length + '"');
+
+          // Tags are compatible (or schema did not declare tags) - dive into recursive validate.
+          var childRval = asn1.validate(objChild, schemaItem, capture, errors);
+          if(childRval) {
+            // consume this child
+            ++j;
+            rval = true;
+          } else if(schemaItem.optional) {
+            // validation failed but element is optional => skip schema item (don't consume child)
+            rval = true;
+          } else {
+            // required item failed
+            rval = false;
+            // errors should already be populated by recursive call; keep failing
+            break;
           }
         }
       }
@@ -1226,7 +1294,8 @@ asn1.validate = function(obj, v, capture, errors) {
     if(obj.type !== v.type) {
       errors.push(
         '[' + v.name + '] ' +
-        'Expected type "' + v.type + '", got "' + obj.type + '"');
+        'Expected type "' + v.type + '", got "' +
+        obj.type + '"');
     }
   }
   return rval;

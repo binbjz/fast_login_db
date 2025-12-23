@@ -2,11 +2,8 @@
 
 exports.__esModule = true;
 exports.default = createMetaResolver;
-
 var _utils = require("./utils");
-
 const PossibleGlobalObjects = new Set(["global", "globalThis", "self", "window"]);
-
 function createMetaResolver(polyfills) {
   const {
     static: staticP,
@@ -21,14 +18,12 @@ function createMetaResolver(polyfills) {
         name: meta.name
       };
     }
-
     if (meta.kind === "property" || meta.kind === "in") {
       const {
         placement,
         object,
         key
       } = meta;
-
       if (object && placement === "static") {
         if (globalP && PossibleGlobalObjects.has(object) && (0, _utils.has)(globalP, key)) {
           return {
@@ -37,7 +32,6 @@ function createMetaResolver(polyfills) {
             name: key
           };
         }
-
         if (staticP && (0, _utils.has)(staticP, object) && (0, _utils.has)(staticP[object], key)) {
           return {
             kind: "static",
@@ -46,7 +40,6 @@ function createMetaResolver(polyfills) {
           };
         }
       }
-
       if (instanceP && (0, _utils.has)(instanceP, key)) {
         return {
           kind: "instance",

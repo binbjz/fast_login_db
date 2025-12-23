@@ -7,7 +7,7 @@ const allModules = require('./modules');
 const targetsParser = require('./targets-parser');
 
 function throwInvalidFilter(filter) {
-  throw TypeError(`Specified invalid module name or pattern: ${ filter }`);
+  throw new TypeError(`Specified invalid module name or pattern: ${ filter }`);
 }
 
 function atLeastSomeModules(modules, filter) {
@@ -19,13 +19,14 @@ function getModules(filter) {
   if (typeof filter == 'string') {
     if (has(entries, filter)) return entries[filter];
     return atLeastSomeModules(allModules.filter(it => it.startsWith(filter)), filter);
-  } else if (filter instanceof RegExp) return atLeastSomeModules(allModules.filter(it => filter.test(it)), filter);
+  }
+  if (filter instanceof RegExp) return atLeastSomeModules(allModules.filter(it => filter.test(it)), filter);
   throwInvalidFilter(filter);
 }
 
 function normalizeModules(option) {
   // TODO: use `.flatMap` in core-js@4
-  return new Set(Array.isArray(option) ? [].concat.apply([], option.map(getModules)) : getModules(option));
+  return new Set(Array.isArray(option) ? [].concat(...option.map(getModules)) : getModules(option));
 }
 
 function checkModule(name, targets) {
@@ -56,7 +57,7 @@ module.exports = function ({
   version = null,
   inverse = false,
 } = {}) {
-  if (modules == null) modules = filter;
+  if (modules === null || modules === undefined) modules = filter;
   inverse = !!inverse;
 
   const parsedTargets = targets ? targetsParser(targets) : null;

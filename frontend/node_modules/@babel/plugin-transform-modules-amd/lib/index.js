@@ -28,7 +28,7 @@ function injectWrapper(path, wrapper) {
   amdFactory.pushContainer("directives", directives);
   amdFactory.pushContainer("body", body);
 }
-var _default = (0, _helperPluginUtils.declare)((api, options) => {
+var _default = exports.default = (0, _helperPluginUtils.declare)((api, options) => {
   var _api$assumption, _api$assumption2;
   api.assertVersion(7);
   const {
@@ -46,9 +46,9 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
       this.file.set("@babel/plugin-transform-modules-*", "amd");
     },
     visitor: {
-      CallExpression(path, state) {
+      ["CallExpression" + (api.types.importExpression ? "|ImportExpression" : "")](path, state) {
         if (!this.file.has("@babel/plugin-proposal-dynamic-import")) return;
-        if (!path.get("callee").isImport()) return;
+        if (path.isCallExpression() && !path.get("callee").isImport()) return;
         let {
           requireId,
           resolveId,
@@ -65,7 +65,9 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
           state.rejectId = rejectId;
         }
         let result = _core.types.identifier("imported");
-        if (!noInterop) result = (0, _helperModuleTransforms.wrapInterop)(path, result, "namespace");
+        if (!noInterop) {
+          result = (0, _helperModuleTransforms.wrapInterop)(this.file.path, result, "namespace");
+        }
         path.replaceWith((0, _helperModuleTransforms.buildDynamicImport)(path.node, false, false, specifier => _core.template.expression.ast`
               new Promise((${resolveId}, ${rejectId}) =>
                 ${requireId}(
@@ -138,6 +140,5 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
     }
   };
 });
-exports.default = _default;
 
 //# sourceMappingURL=index.js.map

@@ -1,6 +1,6 @@
 {
   "name": "@babel/preset-modules",
-  "version": "0.1.5",
+  "version": "0.1.6-no-external-plugins",
   "description": "A Babel preset that targets modern browsers by fixing engine bugs.",
   "main": "lib/index.js",
   "license": "MIT",
@@ -64,7 +64,7 @@
     "Jason Miller <jason@developit.ca>"
   ],
   "peerDependencies": {
-    "@babel/core": "^7.0.0-0"
+    "@babel/core": "^7.0.0-0 || ^8.0.0-0 <8.0.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.7.0",
@@ -98,8 +98,6 @@
   },
   "dependencies": {
     "@babel/helper-plugin-utils": "^7.0.0",
-    "@babel/plugin-proposal-unicode-property-regex": "^7.4.4",
-    "@babel/plugin-transform-dotall-regex": "^7.4.4",
     "@babel/types": "^7.4.4",
     "esutils": "^2.0.2"
   }

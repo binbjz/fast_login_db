@@ -2,9 +2,7 @@
 
 exports.__esModule = true;
 exports.default = void 0;
-
 var _utils = require("../utils");
-
 var _default = callProvider => ({
   ImportDeclaration(path) {
     const source = (0, _utils.getImportSource)(path);
@@ -14,7 +12,6 @@ var _default = callProvider => ({
       source
     }, path);
   },
-
   Program(path) {
     path.get("body").forEach(bodyPath => {
       const source = (0, _utils.getRequireSource)(bodyPath);
@@ -25,7 +22,5 @@ var _default = callProvider => ({
       }, bodyPath);
     });
   }
-
 });
-
 exports.default = _default;

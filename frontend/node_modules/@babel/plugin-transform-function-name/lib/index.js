@@ -4,14 +4,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-
 var _helperCompilationTargets = require("@babel/helper-compilation-targets");
-
 var _helperPluginUtils = require("@babel/helper-plugin-utils");
-
-var _helperFunctionName = require("@babel/helper-function-name");
-
-var _default = (0, _helperPluginUtils.declare)(api => {
+var _default = exports.default = (0, _helperPluginUtils.declare)(api => {
   api.assertVersion(7);
   const supportUnicodeId = !(0, _helperCompilationTargets.isRequired)("transform-unicode-escapes", api.targets());
   return {
@@ -20,24 +15,26 @@ var _default = (0, _helperPluginUtils.declare)(api => {
       FunctionExpression: {
         exit(path) {
           if (path.key !== "value" && !path.parentPath.isObjectProperty()) {
-            const replacement = (0, _helperFunctionName.default)(path);
-            if (replacement) path.replaceWith(replacement);
+            {
+              var _path$ensureFunctionN;
+              (_path$ensureFunctionN = path.ensureFunctionName) != null ? _path$ensureFunctionN : path.ensureFunctionName = require("@babel/traverse").NodePath.prototype.ensureFunctionName;
+            }
+            path.ensureFunctionName(supportUnicodeId);
           }
         }
-
       },
-
       ObjectProperty(path) {
         const value = path.get("value");
-
         if (value.isFunction()) {
-          const newNode = (0, _helperFunctionName.default)(value, false, supportUnicodeId);
-          if (newNode) value.replaceWith(newNode);
+          {
+            var _value$ensureFunction;
+            (_value$ensureFunction = value.ensureFunctionName) != null ? _value$ensureFunction : value.ensureFunctionName = require("@babel/traverse").NodePath.prototype.ensureFunctionName;
+          }
+          value.ensureFunctionName(supportUnicodeId);
         }
       }
-
     }
   };
 });
 
-exports.default = _default;
+//# sourceMappingURL=index.js.map

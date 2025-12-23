@@ -7,7 +7,7 @@ exports.default = void 0;
 var _helperPluginUtils = require("@babel/helper-plugin-utils");
 var _helperSkipTransparentExpressionWrappers = require("@babel/helper-skip-transparent-expression-wrappers");
 var _core = require("@babel/core");
-var _default = (0, _helperPluginUtils.declare)((api, options) => {
+var _default = exports.default = (0, _helperPluginUtils.declare)((api, options) => {
   var _api$assumption, _options$allowArrayLi;
   api.assertVersion(7);
   const iterableIsArray = (_api$assumption = api.assumption("iterableIsArray")) != null ? _api$assumption : options.loose;
@@ -18,11 +18,34 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
     })) {
       return spread.argument;
     } else {
-      return scope.toArray(spread.argument, true, arrayLikeIsIterable);
+      const node = spread.argument;
+      if (_core.types.isIdentifier(node)) {
+        const binding = scope.getBinding(node.name);
+        if (binding != null && binding.constant && binding.path.isGenericType("Array")) {
+          return node;
+        }
+      }
+      if (_core.types.isArrayExpression(node)) {
+        return node;
+      }
+      if (_core.types.isIdentifier(node, {
+        name: "arguments"
+      })) {
+        return _core.template.expression.ast`
+          Array.prototype.slice.call(${node})
+        `;
+      }
+      const args = [node];
+      let helperName = "toConsumableArray";
+      if (arrayLikeIsIterable) {
+        args.unshift(scope.path.hub.addHelper(helperName));
+        helperName = "maybeArrayLike";
+      }
+      return _core.types.callExpression(scope.path.hub.addHelper(helperName), args);
     }
   }
   function hasHole(spread) {
-    return spread.elements.some(el => el === null);
+    return spread.elements.includes(null);
   }
   function hasSpread(nodes) {
     for (let i = 0; i < nodes.length; i++) {
@@ -67,12 +90,10 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
         if (!hasSpread(elements)) return;
         const nodes = build(elements, scope, this.file);
         let first = nodes[0];
-
         if (nodes.length === 1 && first !== elements[0].argument) {
           path.replaceWith(first);
           return;
         }
-
         if (!_core.types.isArrayExpression(first)) {
           first = _core.types.arrayExpression([]);
         } else {
@@ -111,14 +132,12 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
         if (_core.types.isMemberExpression(callee)) {
           const temp = scope.maybeGenerateMemoised(callee.object);
           if (temp) {
-            callee.object = _core.types.assignmentExpression("=", temp,
-            callee.object);
+            callee.object = _core.types.assignmentExpression("=", temp, callee.object);
             contextLiteral = temp;
           } else {
             contextLiteral = _core.types.cloneNode(callee.object);
           }
         }
-
         node.callee = _core.types.memberExpression(node.callee, _core.types.identifier("apply"));
         if (_core.types.isSuper(contextLiteral)) {
           contextLiteral = _core.types.thisExpression();
@@ -144,6 +163,5 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
     }
   };
 });
-exports.default = _default;
 
 //# sourceMappingURL=index.js.map

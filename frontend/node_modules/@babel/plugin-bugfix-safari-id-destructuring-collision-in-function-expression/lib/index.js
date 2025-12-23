@@ -12,19 +12,15 @@ function shouldTransform(path) {
   if (!functionId) return false;
   const name = functionId.name;
   const paramNameBinding = path.scope.getOwnBinding(name);
-
   if (paramNameBinding === undefined) {
     return false;
   }
-
   if (paramNameBinding.kind !== "param") {
     return false;
   }
-
   if (paramNameBinding.identifier === paramNameBinding.path.node) {
     return false;
   }
-
   return name;
 }
 
@@ -35,7 +31,6 @@ var index = helperPluginUtils.declare(api => {
     visitor: {
       FunctionExpression(path) {
         const name = shouldTransform(path);
-
         if (name) {
           const {
             scope
@@ -44,10 +39,9 @@ var index = helperPluginUtils.declare(api => {
           scope.rename(name, newParamName);
         }
       }
-
     }
   };
 });
 
-exports["default"] = index;
+exports.default = index;
 //# sourceMappingURL=index.js.map

@@ -8,7 +8,7 @@ exports.enableFeature = enableFeature;
 exports.featuresKey = void 0;
 exports.hasFeature = hasFeature;
 exports.runtimeKey = void 0;
-const FEATURES = Object.freeze({
+const FEATURES = exports.FEATURES = Object.freeze({
   unicodeFlag: 1 << 0,
   dotAllFlag: 1 << 1,
   unicodePropertyEscape: 1 << 2,
@@ -18,11 +18,8 @@ const FEATURES = Object.freeze({
   duplicateNamedCaptureGroups: 1 << 6,
   modifiers: 1 << 7
 });
-exports.FEATURES = FEATURES;
-const featuresKey = "@babel/plugin-regexp-features/featuresKey";
-exports.featuresKey = featuresKey;
-const runtimeKey = "@babel/plugin-regexp-features/runtimeKey";
-exports.runtimeKey = runtimeKey;
+const featuresKey = exports.featuresKey = "@babel/plugin-regexp-features/featuresKey";
+const runtimeKey = exports.runtimeKey = "@babel/plugin-regexp-features/runtimeKey";
 function enableFeature(features, feature) {
   return features | feature;
 }

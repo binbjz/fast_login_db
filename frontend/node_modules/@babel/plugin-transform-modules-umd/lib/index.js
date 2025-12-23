@@ -4,15 +4,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-
 var _helperPluginUtils = require("@babel/helper-plugin-utils");
-
 var _path = require("path");
-
 var _helperModuleTransforms = require("@babel/helper-module-transforms");
-
 var _core = require("@babel/core");
-
 const buildPrerequisiteAssignment = (0, _core.template)(`
   GLOBAL_REFERENCE = GLOBAL_REFERENCE || {}
 `);
@@ -35,10 +30,8 @@ const buildWrapper = (0, _core.template)(`
     function(IMPORT_NAMES) {
   })
 `);
-
-var _default = (0, _helperPluginUtils.declare)((api, options) => {
+var _default = exports.default = (0, _helperPluginUtils.declare)((api, options) => {
   var _api$assumption, _api$assumption2;
-
   api.assertVersion(7);
   const {
     globals,
@@ -51,17 +44,12 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
   } = options;
   const constantReexports = (_api$assumption = api.assumption("constantReexports")) != null ? _api$assumption : options.loose;
   const enumerableModuleMeta = (_api$assumption2 = api.assumption("enumerableModuleMeta")) != null ? _api$assumption2 : options.loose;
-
   function buildBrowserInit(browserGlobals, exactGlobals, filename, moduleName) {
     const moduleNameOrBasename = moduleName ? moduleName.value : (0, _path.basename)(filename, (0, _path.extname)(filename));
-
     let globalToAssign = _core.types.memberExpression(_core.types.identifier("global"), _core.types.identifier(_core.types.toIdentifier(moduleNameOrBasename)));
-
     let initAssignments = [];
-
     if (exactGlobals) {
       const globalName = browserGlobals[moduleNameOrBasename];
-
       if (globalName) {
         initAssignments = [];
         const members = globalName.split(".");
@@ -73,17 +61,13 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
         }, _core.types.memberExpression(_core.types.identifier("global"), _core.types.identifier(members[0])));
       }
     }
-
     initAssignments.push(_core.types.expressionStatement(_core.types.assignmentExpression("=", globalToAssign, _core.types.memberExpression(_core.types.identifier("mod"), _core.types.identifier("exports")))));
     return initAssignments;
   }
-
   function buildBrowserArg(browserGlobals, exactGlobals, source) {
     let memberExpression;
-
     if (exactGlobals) {
       const globalRef = browserGlobals[source];
-
       if (globalRef) {
         memberExpression = globalRef.split(".").reduce((accum, curr) => _core.types.memberExpression(accum, _core.types.identifier(curr)), _core.types.identifier("global"));
       } else {
@@ -94,10 +78,8 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
       const globalName = browserGlobals[requireName] || requireName;
       memberExpression = _core.types.memberExpression(_core.types.identifier("global"), _core.types.identifier(_core.types.toIdentifier(globalName)));
     }
-
     return memberExpression;
   }
-
   return {
     name: "transform-modules-umd",
     visitor: {
@@ -125,34 +107,27 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
           const commonjsArgs = [];
           const browserArgs = [];
           const importNames = [];
-
           if ((0, _helperModuleTransforms.hasExports)(meta)) {
             amdArgs.push(_core.types.stringLiteral("exports"));
             commonjsArgs.push(_core.types.identifier("exports"));
             browserArgs.push(_core.types.memberExpression(_core.types.identifier("mod"), _core.types.identifier("exports")));
             importNames.push(_core.types.identifier(meta.exportName));
           }
-
           for (const [source, metadata] of meta.source) {
             amdArgs.push(_core.types.stringLiteral(source));
             commonjsArgs.push(_core.types.callExpression(_core.types.identifier("require"), [_core.types.stringLiteral(source)]));
             browserArgs.push(buildBrowserArg(browserGlobals, exactGlobals, source));
             importNames.push(_core.types.identifier(metadata.name));
-
             if (!(0, _helperModuleTransforms.isSideEffectImport)(metadata)) {
               const interop = (0, _helperModuleTransforms.wrapInterop)(path, _core.types.identifier(metadata.name), metadata.interop);
-
               if (interop) {
                 const header = _core.types.expressionStatement(_core.types.assignmentExpression("=", _core.types.identifier(metadata.name), interop));
-
                 header.loc = meta.loc;
                 headers.push(header);
               }
             }
-
             headers.push(...(0, _helperModuleTransforms.buildNamespaceInitStatements)(meta, metadata, constantReexports));
           }
-
           (0, _helperModuleTransforms.ensureStatementsHoisted)(headers);
           path.unshiftContainer("body", headers);
           const {
@@ -173,10 +148,9 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
           umdFactory.pushContainer("directives", directives);
           umdFactory.pushContainer("body", body);
         }
-
       }
     }
   };
 });
 
-exports.default = _default;
+//# sourceMappingURL=index.js.map

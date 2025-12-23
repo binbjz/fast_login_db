@@ -1,7 +1,8 @@
 "use strict";
 
-var _utils = require("./utils");
-var _placeholders = require("./placeholders");
+var _utils = require("./utils.js");
+var _placeholders = require("./placeholders.js");
+var _core = require("./core.js");
 const defineType = (0, _utils.defineAliasedType)("Miscellaneous");
 {
   defineType("Noop", {
@@ -11,14 +12,14 @@ const defineType = (0, _utils.defineAliasedType)("Miscellaneous");
 defineType("Placeholder", {
   visitor: [],
   builder: ["expectedNode", "name"],
-  fields: {
+  fields: Object.assign({
     name: {
       validate: (0, _utils.assertNodeType)("Identifier")
     },
     expectedNode: {
       validate: (0, _utils.assertOneOf)(..._placeholders.PLACEHOLDERS)
     }
-  }
+  }, (0, _core.patternLikeCommon)())
 });
 defineType("V8IntrinsicIdentifier", {
   builder: ["name"],

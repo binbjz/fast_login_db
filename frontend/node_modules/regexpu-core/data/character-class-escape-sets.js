@@ -2,6 +2,7 @@
 'use strict';
 
 const regenerate = require('regenerate');
+const UNICODE_IV_SET = require('./all-characters.js').UNICODE_IV_SET;
 
 exports.REGULAR = new Map([
 	['d', regenerate()
@@ -102,4 +103,25 @@ exports.UNICODE_IGNORE_CASE = new Map([
 		.addRange(0x7B, 0x17E)
 		.addRange(0x180, 0x2129)
 		.addRange(0x212B, 0x10FFFF)]
+]);
+
+exports.UNICODESET_IGNORE_CASE = new Map([
+	['d', regenerate()
+		.addRange(0x30, 0x39)],
+	['D', UNICODE_IV_SET.clone().remove(regenerate()
+		.addRange(0x30, 0x39))],
+	['s', regenerate(0x20, 0xA0, 0x1680, 0x202F, 0x205F, 0x3000, 0xFEFF)
+		.addRange(0x9, 0xD)
+		.addRange(0x2000, 0x200A)
+		.addRange(0x2028, 0x2029)],
+	['S', UNICODE_IV_SET.clone().remove(regenerate(0x20, 0xA0, 0x1680, 0x202F, 0x205F, 0x3000, 0xFEFF)
+		.addRange(0x9, 0xD)
+		.addRange(0x2000, 0x200A)
+		.addRange(0x2028, 0x2029))],
+	['w', regenerate(0x5F)
+		.addRange(0x30, 0x39)
+		.addRange(0x61, 0x7A)],
+	['W', UNICODE_IV_SET.clone().remove(regenerate(0x5F)
+		.addRange(0x30, 0x39)
+		.addRange(0x61, 0x7A))]
 ]);

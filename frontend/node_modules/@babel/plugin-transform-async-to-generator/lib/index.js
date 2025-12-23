@@ -8,9 +8,9 @@ var _helperPluginUtils = require("@babel/helper-plugin-utils");
 var _helperRemapAsyncToGenerator = require("@babel/helper-remap-async-to-generator");
 var _helperModuleImports = require("@babel/helper-module-imports");
 var _core = require("@babel/core");
-var _default = (0, _helperPluginUtils.declare)((api, options) => {
+var _default = exports.default = (0, _helperPluginUtils.declare)((api, options) => {
   var _api$assumption, _api$assumption2;
-  api.assertVersion(7);
+  api.assertVersion("^7.0.0-0 || >8.0.0-alpha <8.0.0-beta");
   const {
     method,
     module
@@ -48,6 +48,5 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
     }
   };
 });
-exports.default = _default;
 
 //# sourceMappingURL=index.js.map

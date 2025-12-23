@@ -34,22 +34,99 @@ var Node = /** @class */ (function (_super) {
         if (perm === void 0) { perm = 438; }
         var _this = _super.call(this) || this;
         // User ID and group ID.
-        _this.uid = getuid();
-        _this.gid = getgid();
-        _this.atime = new Date();
-        _this.mtime = new Date();
-        _this.ctime = new Date();
-        _this.perm = 438; // Permissions `chmod`, `fchmod`
+        _this._uid = getuid();
+        _this._gid = getgid();
+        _this._atime = new Date();
+        _this._mtime = new Date();
+        _this._ctime = new Date();
+        _this._perm = 438; // Permissions `chmod`, `fchmod`
         _this.mode = S_IFREG; // S_IFDIR, S_IFREG, etc.. (file by default?)
         // Number of hard links pointing at this Node.
-        _this.nlink = 1;
-        _this.perm = perm;
+        _this._nlink = 1;
+        _this._perm = perm;
         _this.mode |= perm;
         _this.ino = ino;
         return _this;
     }
+    Object.defineProperty(Node.prototype, "ctime", {
+        get: function () {
+            return this._ctime;
+        },
+        set: function (ctime) {
+            this._ctime = ctime;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Node.prototype, "uid", {
+        get: function () {
+            return this._uid;
+        },
+        set: function (uid) {
+            this._uid = uid;
+            this.ctime = new Date();
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Node.prototype, "gid", {
+        get: function () {
+            return this._gid;
+        },
+        set: function (gid) {
+            this._gid = gid;
+            this.ctime = new Date();
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Node.prototype, "atime", {
+        get: function () {
+            return this._atime;
+        },
+        set: function (atime) {
+            this._atime = atime;
+            this.ctime = new Date();
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Node.prototype, "mtime", {
+        get: function () {
+            return this._mtime;
+        },
+        set: function (mtime) {
+            this._mtime = mtime;
+            this.ctime = new Date();
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Node.prototype, "perm", {
+        get: function () {
+            return this._perm;
+        },
+        set: function (perm) {
+            this._perm = perm;
+            this.ctime = new Date();
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Node.prototype, "nlink", {
+        get: function () {
+            return this._nlink;
+        },
+        set: function (nlink) {
+            this._nlink = nlink;
+            this.ctime = new Date();
+        },
+        enumerable: false,
+        configurable: true
+    });
     Node.prototype.getString = function (encoding) {
         if (encoding === void 0) { encoding = 'utf8'; }
+        this.atime = new Date();
         return this.getBuffer().toString(encoding);
     };
     Node.prototype.setString = function (str) {
@@ -58,6 +135,7 @@ var Node = /** @class */ (function (_super) {
         this.touch();
     };
     Node.prototype.getBuffer = function () {
+        this.atime = new Date();
         if (!this.buf)
             this.setBuffer((0, buffer_1.bufferAllocUnsafe)(0));
         return (0, buffer_1.bufferFrom)(this.buf); // Return a copy.
@@ -115,6 +193,7 @@ var Node = /** @class */ (function (_super) {
         if (off === void 0) { off = 0; }
         if (len === void 0) { len = buf.byteLength; }
         if (pos === void 0) { pos = 0; }
+        this.atime = new Date();
         if (!this.buf)
             this.buf = (0, buffer_1.bufferAllocUnsafe)(0);
         var actualLen = len;
@@ -244,9 +323,12 @@ var Link = /** @class */ (function (_super) {
         // Recursively sync children steps, e.g. in case of dir rename
         set: function (val) {
             this._steps = val;
-            for (var _i = 0, _a = Object.values(this.children); _i < _a.length; _i++) {
-                var child = _a[_i];
-                child === null || child === void 0 ? void 0 : child.syncSteps();
+            for (var _i = 0, _a = Object.entries(this.children); _i < _a.length; _i++) {
+                var _b = _a[_i], child = _b[0], link = _b[1];
+                if (child === '.' || child === '..') {
+                    continue;
+                }
+                link === null || link === void 0 ? void 0 : link.syncSteps();
             }
         },
         enumerable: false,
@@ -264,10 +346,8 @@ var Link = /** @class */ (function (_super) {
         var link = new Link(this.vol, this, name);
         link.setNode(node);
         if (node.isDirectory()) {
-            // link.setChild('.', link);
-            // link.getNode().nlink++;
-            // link.setChild('..', this);
-            // this.getNode().nlink++;
+            link.children['.'] = link;
+            link.getNode().nlink++;
         }
         this.setChild(name, link);
         return link;
@@ -277,15 +357,28 @@ var Link = /** @class */ (function (_super) {
         this.children[name] = link;
         link.parent = this;
         this.length++;
+        var node = link.getNode();
+        if (node.isDirectory()) {
+            link.children['..'] = this;
+            this.getNode().nlink++;
+        }
+        this.getNode().mtime = new Date();
         this.emit('child:add', link, this);
         return link;
     };
     Link.prototype.deleteChild = function (link) {
+        var node = link.getNode();
+        if (node.isDirectory()) {
+            delete link.children['..'];
+            this.getNode().nlink--;
+        }
         delete this.children[link.getName()];
         this.length--;
+        this.getNode().mtime = new Date();
         this.emit('child:delete', link, this);
     };
     Link.prototype.getChild = function (name) {
+        this.getNode().mtime = new Date();
         if (Object.hasOwnProperty.call(this.children, name)) {
             return this.children[name];
         }

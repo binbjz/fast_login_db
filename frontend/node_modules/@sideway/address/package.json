@@ -1,7 +1,7 @@
 {
     "name": "@sideway/address",
     "description": "Email address and domain validation",
-    "version": "4.1.4",
+    "version": "4.1.5",
     "repository": "git://github.com/sideway/address",
     "main": "lib/index.js",
     "types": "lib/index.d.ts",

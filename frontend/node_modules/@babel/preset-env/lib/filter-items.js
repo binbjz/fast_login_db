@@ -7,8 +7,7 @@ exports.addProposalSyntaxPlugins = addProposalSyntaxPlugins;
 exports.removeUnnecessaryItems = removeUnnecessaryItems;
 exports.removeUnsupportedItems = removeUnsupportedItems;
 var _semver = require("semver");
-var _availablePlugins = require("./available-plugins");
-const has = Function.call.bind(Object.hasOwnProperty);
+var _availablePlugins = require("./available-plugins.js");
 function addProposalSyntaxPlugins(items, proposalSyntaxPlugins) {
   proposalSyntaxPlugins.forEach(plugin => {
     items.add(plugin);
@@ -17,13 +16,14 @@ function addProposalSyntaxPlugins(items, proposalSyntaxPlugins) {
 function removeUnnecessaryItems(items, overlapping) {
   items.forEach(item => {
     var _overlapping$item;
-    (_overlapping$item = overlapping[item]) == null ? void 0 : _overlapping$item.forEach(name => items.delete(name));
+    (_overlapping$item = overlapping[item]) == null || _overlapping$item.forEach(name => items.delete(name));
   });
 }
 function removeUnsupportedItems(items, babelVersion) {
   items.forEach(item => {
-    if (has(_availablePlugins.minVersions, item) && _semver.lt(babelVersion,
-    _availablePlugins.minVersions[item])) {
+    if (hasOwnProperty.call(_availablePlugins.minVersions, item) && _semver.lt(babelVersion, _availablePlugins.minVersions[item])) {
+      items.delete(item);
+    } else if (babelVersion[0] === "8" && _availablePlugins.legacyBabel7SyntaxPlugins.has(item)) {
       items.delete(item);
     }
   });

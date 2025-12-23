@@ -35,8 +35,8 @@ exports.UnaryExpression = UnaryExpression;
 exports.UpdateExpression = UpdateExpression;
 exports.VariableDeclarator = VariableDeclarator;
 var _t = require("@babel/types");
-var _infererReference = require("./inferer-reference");
-var _util = require("./util");
+var _infererReference = require("./inferer-reference.js");
+var _util = require("./util.js");
 const {
   BOOLEAN_BINARY_OPERATORS,
   BOOLEAN_UNARY_OPERATORS,
@@ -84,19 +84,19 @@ function UnaryExpression(node) {
   const operator = node.operator;
   if (operator === "void") {
     return voidTypeAnnotation();
-  } else if (NUMBER_UNARY_OPERATORS.indexOf(operator) >= 0) {
+  } else if (NUMBER_UNARY_OPERATORS.includes(operator)) {
     return numberTypeAnnotation();
-  } else if (STRING_UNARY_OPERATORS.indexOf(operator) >= 0) {
+  } else if (STRING_UNARY_OPERATORS.includes(operator)) {
     return stringTypeAnnotation();
-  } else if (BOOLEAN_UNARY_OPERATORS.indexOf(operator) >= 0) {
+  } else if (BOOLEAN_UNARY_OPERATORS.includes(operator)) {
     return booleanTypeAnnotation();
   }
 }
 function BinaryExpression(node) {
   const operator = node.operator;
-  if (NUMBER_BINARY_OPERATORS.indexOf(operator) >= 0) {
+  if (NUMBER_BINARY_OPERATORS.includes(operator)) {
     return numberTypeAnnotation();
-  } else if (BOOLEAN_BINARY_OPERATORS.indexOf(operator) >= 0) {
+  } else if (BOOLEAN_BINARY_OPERATORS.includes(operator)) {
     return booleanTypeAnnotation();
   } else if (operator === "+") {
     const right = this.get("right");

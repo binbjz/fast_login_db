@@ -4,10 +4,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-
 var _helperPluginUtils = require("@babel/helper-plugin-utils");
-
-var _default = (0, _helperPluginUtils.declare)(api => {
+var _default = exports.default = (0, _helperPluginUtils.declare)(api => {
   api.assertVersion(7);
   return {
     name: "transform-literals",
@@ -19,17 +17,15 @@ var _default = (0, _helperPluginUtils.declare)(api => {
           node.extra = undefined;
         }
       },
-
       StringLiteral({
         node
       }) {
-        if (node.extra && /\\[u]/gi.test(node.extra.raw)) {
+        if (node.extra && /\\u/i.test(node.extra.raw)) {
           node.extra = undefined;
         }
       }
-
     }
   };
 });
 
-exports.default = _default;
+//# sourceMappingURL=index.js.map

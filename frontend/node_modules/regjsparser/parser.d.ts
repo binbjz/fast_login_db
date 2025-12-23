@@ -52,7 +52,7 @@ export type Anchor = Base<"anchor"> & {
 };
 
 export type CharacterClassEscape = Base<"characterClassEscape"> & {
-  value: string;
+  value: 'd' | 'D' | 'w' | 'W' | 's' | 'S';
 };
 
 export type Value = Base<"value"> & {
@@ -100,9 +100,9 @@ export type CharacterClass<F extends Features = {}> = Base<"characterClass"> & {
 };
 
 export type ModifierFlags = {
-  enabling: string,
-  disabling: string
-}
+  enabling: string;
+  disabling: string;
+};
 
 export type NonCapturingGroup<F extends Features = {}> = Base<"group"> &
   (
@@ -128,7 +128,6 @@ export type NonCapturingGroup<F extends Features = {}> = Base<"group"> &
       >)
   );
 
-
 export type CapturingGroup<F extends Features = {}> = Base<"group"> & {
   behavior: "normal";
   body: RootNode<F>[];
@@ -151,7 +150,7 @@ export type Quantifier<F extends Features = {}> = Base<"quantifier"> & {
   greedy: boolean;
   max?: number;
   min: number;
-  symbol?: '?' | '*' | '+';
+  symbol?: "?" | "*" | "+";
 };
 
 export type Disjunction<F extends Features = {}> = Base<"disjunction"> & {
@@ -172,7 +171,7 @@ export type IndexReference = Base<"reference"> & {
 
 export type Reference<F extends Features = {}> = _If<
   F["namedGroups"],
-  NamedReference,
+  IndexReference | NamedReference,
   IndexReference
 >;
 

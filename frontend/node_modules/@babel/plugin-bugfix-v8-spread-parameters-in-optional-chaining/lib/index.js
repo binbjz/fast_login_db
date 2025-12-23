@@ -3,7 +3,7 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var helperPluginUtils = require('@babel/helper-plugin-utils');
-var pluginProposalOptionalChaining = require('@babel/plugin-proposal-optional-chaining');
+var pluginTransformOptionalChaining = require('@babel/plugin-transform-optional-chaining');
 var helperSkipTransparentExpressionWrappers = require('@babel/helper-skip-transparent-expression-wrappers');
 var core = require('@babel/core');
 
@@ -11,7 +11,6 @@ function matchAffectedArguments(argumentNodes) {
   const spreadIndex = argumentNodes.findIndex(node => core.types.isSpreadElement(node));
   return spreadIndex >= 0 && spreadIndex !== argumentNodes.length - 1;
 }
-
 function shouldTransform(path) {
   let optionalPath = path;
   const chains = [];
@@ -53,7 +52,7 @@ var index = helperPluginUtils.declare(api => {
     visitor: {
       "OptionalCallExpression|OptionalMemberExpression"(path) {
         if (shouldTransform(path)) {
-          pluginProposalOptionalChaining.transform(path, {
+          pluginTransformOptionalChaining.transform(path, {
             noDocumentAll,
             pureGetters
           });
@@ -63,5 +62,5 @@ var index = helperPluginUtils.declare(api => {
   };
 });
 
-exports["default"] = index;
+exports.default = index;
 //# sourceMappingURL=index.js.map

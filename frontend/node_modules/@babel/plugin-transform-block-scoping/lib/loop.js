@@ -66,7 +66,9 @@ function relativeLoopLocation(path, loopPath) {
   const bodyPath = loopPath.get("body");
   let inClosure = false;
   for (let currPath = path; currPath; currPath = currPath.parentPath) {
-    if (currPath.isFunction() || currPath.isClass()) inClosure = true;
+    if (currPath.isFunction() || currPath.isClass() || currPath.isMethod()) {
+      inClosure = true;
+    }
     if (currPath === bodyPath) {
       return {
         inBody: true,
@@ -188,31 +190,27 @@ function wrapLoopBody(loopPath, captured, updatedBindingsUsages) {
       varNames.push(...Object.keys(_core.types.getBindingIdentifiers(decl.id)));
       if (decl.init) {
         assign.push(_core.types.assignmentExpression("=", decl.id, decl.init));
+      } else if (_core.types.isForXStatement(varPath.parent, {
+        left: varPath.node
+      })) {
+        assign.push(decl.id);
       }
     }
     if (assign.length > 0) {
-      let replacement = assign.length === 1 ? assign[0] : _core.types.sequenceExpression(assign);
-      if (!_core.types.isForStatement(varPath.parent, {
-        init: varPath.node
-      }) && !_core.types.isForXStatement(varPath.parent, {
-        left: varPath.node
-      })) {
-        replacement = _core.types.expressionStatement(replacement);
-      }
+      const replacement = assign.length === 1 ? assign[0] : _core.types.sequenceExpression(assign);
       varPath.replaceWith(replacement);
     } else {
       varPath.remove();
     }
   }
   if (varNames.length) {
-    bodyStmts.push(_core.types.variableDeclaration("var", varNames.map(name => _core.types.variableDeclarator(_core.types.identifier(name)))));
+    varPath.pushContainer("declarations", varNames.map(name => _core.types.variableDeclarator(_core.types.identifier(name))));
   }
-  if (state.breaksContinues.length === 0 && state.returns.length === 0) {
+  const labelNum = state.breaksContinues.length;
+  const returnNum = state.returns.length;
+  if (labelNum + returnNum === 0) {
     bodyStmts.push(_core.types.expressionStatement(call));
-  } else {
-    const completionId = loopPath.scope.generateUid("ret");
-    bodyStmts.push(_core.types.variableDeclaration("var", [_core.types.variableDeclarator(_core.types.identifier(completionId), call)]));
-    const injected = new Set();
+  } else if (labelNum === 1 && returnNum === 0) {
     for (const path of state.breaksContinues) {
       const {
         node
@@ -222,18 +220,46 @@ function wrapLoopBody(loopPath, captured, updatedBindingsUsages) {
         label
       } = node;
       let name = type === "BreakStatement" ? "break" : "continue";
-      if (label) name += "|" + label.name;
-      path.replaceWith(_core.types.returnStatement(_core.types.stringLiteral(name)));
+      if (label) name += " " + label.name;
+      path.replaceWith(_core.types.addComment(_core.types.returnStatement(_core.types.numericLiteral(1)), "trailing", " " + name, true));
       if (updaterNode) path.insertBefore(_core.types.cloneNode(updaterNode));
-      if (injected.has(name)) continue;
-      injected.add(name);
       bodyStmts.push(_core.template.statement.ast`
-        if (
-          ${_core.types.identifier(completionId)} === ${_core.types.stringLiteral(name)}
-        ) ${node}
+        if (${call}) ${node}
       `);
     }
-    if (state.returns.length) {
+  } else {
+    const completionId = loopPath.scope.generateUid("ret");
+    if (varPath.isVariableDeclaration()) {
+      varPath.pushContainer("declarations", [_core.types.variableDeclarator(_core.types.identifier(completionId))]);
+      bodyStmts.push(_core.types.expressionStatement(_core.types.assignmentExpression("=", _core.types.identifier(completionId), call)));
+    } else {
+      bodyStmts.push(_core.types.variableDeclaration("var", [_core.types.variableDeclarator(_core.types.identifier(completionId), call)]));
+    }
+    const injected = [];
+    for (const path of state.breaksContinues) {
+      const {
+        node
+      } = path;
+      const {
+        type,
+        label
+      } = node;
+      let name = type === "BreakStatement" ? "break" : "continue";
+      if (label) name += " " + label.name;
+      let i = injected.indexOf(name);
+      const hasInjected = i !== -1;
+      if (!hasInjected) {
+        injected.push(name);
+        i = injected.length - 1;
+      }
+      path.replaceWith(_core.types.addComment(_core.types.returnStatement(_core.types.numericLiteral(i)), "trailing", " " + name, true));
+      if (updaterNode) path.insertBefore(_core.types.cloneNode(updaterNode));
+      if (hasInjected) continue;
+      bodyStmts.push(_core.template.statement.ast`
+        if (${_core.types.identifier(completionId)} === ${_core.types.numericLiteral(i)}) ${node}
+      `);
+    }
+    if (returnNum) {
       for (const path of state.returns) {
         const arg = path.node.argument || path.scope.buildUndefinedNode();
         path.replaceWith(_core.template.statement.ast`
@@ -241,9 +267,8 @@ function wrapLoopBody(loopPath, captured, updatedBindingsUsages) {
         `);
       }
       bodyStmts.push(_core.template.statement.ast`
-        if (typeof ${_core.types.identifier(completionId)} === "object")
-          return ${_core.types.identifier(completionId)}.v;
-      `);
+          if (${_core.types.identifier(completionId)}) return ${_core.types.identifier(completionId)}.v;
+        `);
     }
   }
   loopNode.body = _core.types.blockStatement(bodyStmts);

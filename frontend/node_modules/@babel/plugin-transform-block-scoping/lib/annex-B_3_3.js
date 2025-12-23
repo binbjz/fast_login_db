@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.annexB33FunctionsVisitor = void 0;
 exports.isVarScope = isVarScope;
 var _core = require("@babel/core");
-const annexB33FunctionsVisitor = {
+const annexB33FunctionsVisitor = exports.annexB33FunctionsVisitor = Object.assign({
   VariableDeclaration(path) {
     if (isStrict(path)) return;
     if (path.node.kind !== "var") return;
@@ -14,7 +14,8 @@ const annexB33FunctionsVisitor = {
     varScope.path.traverse(functionsToVarVisitor, {
       names: Object.keys(path.getBindingIdentifiers())
     });
-  },
+  }
+}, {
   BlockStatement(path) {
     if (isStrict(path)) return;
     if (_core.types.isFunction(path.parent, {
@@ -26,8 +27,7 @@ const annexB33FunctionsVisitor = {
     if (isStrict(path)) return;
     transformStatementList(path.get("consequent"));
   }
-};
-exports.annexB33FunctionsVisitor = annexB33FunctionsVisitor;
+});
 function transformStatementList(paths) {
   outer: for (const path of paths) {
     if (!path.isFunctionDeclaration()) continue;

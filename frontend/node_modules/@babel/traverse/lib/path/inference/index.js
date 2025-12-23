@@ -9,7 +9,7 @@ exports.couldBeBaseType = couldBeBaseType;
 exports.getTypeAnnotation = getTypeAnnotation;
 exports.isBaseType = isBaseType;
 exports.isGenericType = isGenericType;
-var inferers = require("./inferers");
+var inferers = require("./inferers.js");
 var _t = require("@babel/types");
 const {
   anyTypeAnnotation,
@@ -38,7 +38,7 @@ function getTypeAnnotation() {
   if (type != null) {
     return type;
   }
-  type = this._getTypeAnnotation() || anyTypeAnnotation();
+  type = _getTypeAnnotation.call(this) || anyTypeAnnotation();
   if (isTypeAnnotation(type) || isTSTypeAnnotation(type)) {
     type = type.typeAnnotation;
   }

@@ -1,4 +1,4 @@
-# regenerate-unicode-properties [![Build status](https://travis-ci.org/mathiasbynens/regenerate-unicode-properties.svg?branch=main)](https://travis-ci.org/mathiasbynens/regenerate-unicode-properties) [![regenerate-unicode-properties on npm](https://img.shields.io/npm/v/regenerate-unicode-properties)](https://www.npmjs.com/package/regenerate-unicode-properties)
+# regenerate-unicode-properties [![regenerate-unicode-properties on npm](https://img.shields.io/npm/v/regenerate-unicode-properties)](https://www.npmjs.com/package/regenerate-unicode-properties)
 
 _regenerate-unicode-properties_ is a collection of [Regenerate](https://github.com/mathiasbynens/regenerate) sets for [various Unicode properties](https://github.com/tc39/proposal-regexp-unicode-property-escapes).
 

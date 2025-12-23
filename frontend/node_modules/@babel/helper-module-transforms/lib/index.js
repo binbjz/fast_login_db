@@ -11,12 +11,6 @@ Object.defineProperty(exports, "buildDynamicImport", {
 });
 exports.buildNamespaceInitStatements = buildNamespaceInitStatements;
 exports.ensureStatementsHoisted = ensureStatementsHoisted;
-Object.defineProperty(exports, "getDynamicImportSource", {
-  enumerable: true,
-  get: function () {
-    return _dynamicImport.getDynamicImportSource;
-  }
-});
 Object.defineProperty(exports, "getModuleName", {
   enumerable: true,
   get: function () {
@@ -50,31 +44,18 @@ Object.defineProperty(exports, "rewriteThis", {
 });
 exports.wrapInterop = wrapInterop;
 var _assert = require("assert");
-var _t = require("@babel/types");
-var _template = require("@babel/template");
+var _core = require("@babel/core");
 var _helperModuleImports = require("@babel/helper-module-imports");
-var _rewriteThis = require("./rewrite-this");
-var _rewriteLiveReferences = require("./rewrite-live-references");
-var _normalizeAndLoadMetadata = require("./normalize-and-load-metadata");
-var _dynamicImport = require("./dynamic-import");
-var _getModuleName = require("./get-module-name");
-const {
-  booleanLiteral,
-  callExpression,
-  cloneNode,
-  directive,
-  directiveLiteral,
-  expressionStatement,
-  identifier,
-  isIdentifier,
-  memberExpression,
-  stringLiteral,
-  valueToNode,
-  variableDeclaration,
-  variableDeclarator
-} = _t;
+var _rewriteThis = require("./rewrite-this.js");
+var _rewriteLiveReferences = require("./rewrite-live-references.js");
+var _normalizeAndLoadMetadata = require("./normalize-and-load-metadata.js");
+var Lazy = require("./lazy-modules.js");
+var _dynamicImport = require("./dynamic-import.js");
+var _getModuleName = require("./get-module-name.js");
+{
+  exports.getDynamicImportSource = require("./dynamic-import").getDynamicImportSource;
+}
 function rewriteModuleStatementsAndPrepareHeader(path, {
-  loose,
   exportName,
   strict,
   allowTopLevelThis,
@@ -82,10 +63,12 @@ function rewriteModuleStatementsAndPrepareHeader(path, {
   noInterop,
   importInterop = noInterop ? "none" : "babel",
   lazy,
+  getWrapperPayload = Lazy.toGetWrapperPayload(lazy != null ? lazy : false),
+  wrapReference = Lazy.wrapReference,
   esNamespaceOnly,
   filename,
-  constantReexports = loose,
-  enumerableModuleMeta = loose,
+  constantReexports = arguments[1].loose,
+  enumerableModuleMeta = arguments[1].loose,
   noIncompleteNsImportDetection
 }) {
   (0, _normalizeAndLoadMetadata.validateImportInteropOption)(importInterop);
@@ -94,20 +77,20 @@ function rewriteModuleStatementsAndPrepareHeader(path, {
   const meta = (0, _normalizeAndLoadMetadata.default)(path, exportName, {
     importInterop,
     initializeReexports: constantReexports,
-    lazy,
+    getWrapperPayload,
     esNamespaceOnly,
     filename
   });
   if (!allowTopLevelThis) {
     (0, _rewriteThis.default)(path);
   }
-  (0, _rewriteLiveReferences.default)(path, meta);
+  (0, _rewriteLiveReferences.default)(path, meta, wrapReference);
   if (strictMode !== false) {
     const hasStrict = path.node.directives.some(directive => {
       return directive.value.value === "use strict";
     });
     if (!hasStrict) {
-      path.unshiftContainer("directives", directive(directiveLiteral("use strict")));
+      path.unshiftContainer("directives", _core.types.directive(_core.types.directiveLiteral("use strict")));
     }
   }
   const headers = [];
@@ -119,7 +102,7 @@ function rewriteModuleStatementsAndPrepareHeader(path, {
     meta.exportNameListName = nameList.name;
     headers.push(nameList.statement);
   }
-  headers.push(...buildExportInitializationStatements(path, meta, constantReexports, noIncompleteNsImportDetection));
+  headers.push(...buildExportInitializationStatements(path, meta, wrapReference, constantReexports, noIncompleteNsImportDetection));
   return {
     meta,
     headers
@@ -135,7 +118,7 @@ function wrapInterop(programPath, expr, type) {
     return null;
   }
   if (type === "node-namespace") {
-    return callExpression(programPath.hub.addHelper("interopRequireWildcard"), [expr, booleanLiteral(true)]);
+    return _core.types.callExpression(programPath.hub.addHelper("interopRequireWildcard"), [expr, _core.types.booleanLiteral(true)]);
   } else if (type === "node-default") {
     return null;
   }
@@ -147,73 +130,92 @@ function wrapInterop(programPath, expr, type) {
   } else {
     throw new Error(`Unknown interop: ${type}`);
   }
-  return callExpression(programPath.hub.addHelper(helper), [expr]);
+  return _core.types.callExpression(programPath.hub.addHelper(helper), [expr]);
 }
-function buildNamespaceInitStatements(metadata, sourceMetadata, constantReexports = false) {
+function buildNamespaceInitStatements(metadata, sourceMetadata, constantReexports = false, wrapReference = Lazy.wrapReference) {
+  var _wrapReference;
   const statements = [];
-  let srcNamespace = identifier(sourceMetadata.name);
-  if (sourceMetadata.lazy) srcNamespace = callExpression(srcNamespace, []);
+  const srcNamespaceId = _core.types.identifier(sourceMetadata.name);
   for (const localName of sourceMetadata.importsNamespace) {
     if (localName === sourceMetadata.name) continue;
-    statements.push(_template.default.statement`var NAME = SOURCE;`({
+    statements.push(_core.template.statement`var NAME = SOURCE;`({
       NAME: localName,
-      SOURCE: cloneNode(srcNamespace)
+      SOURCE: _core.types.cloneNode(srcNamespaceId)
     }));
   }
+  const srcNamespace = (_wrapReference = wrapReference(srcNamespaceId, sourceMetadata.wrap)) != null ? _wrapReference : srcNamespaceId;
   if (constantReexports) {
-    statements.push(...buildReexportsFromMeta(metadata, sourceMetadata, true));
+    statements.push(...buildReexportsFromMeta(metadata, sourceMetadata, true, wrapReference));
   }
   for (const exportName of sourceMetadata.reexportNamespace) {
-    statements.push((sourceMetadata.lazy ? _template.default.statement`
+    statements.push((!_core.types.isIdentifier(srcNamespace) ? _core.template.statement`
             Object.defineProperty(EXPORTS, "NAME", {
               enumerable: true,
               get: function() {
                 return NAMESPACE;
               }
             });
-          ` : _template.default.statement`EXPORTS.NAME = NAMESPACE;`)({
+          ` : _core.template.statement`EXPORTS.NAME = NAMESPACE;`)({
       EXPORTS: metadata.exportName,
       NAME: exportName,
-      NAMESPACE: cloneNode(srcNamespace)
+      NAMESPACE: _core.types.cloneNode(srcNamespace)
     }));
   }
   if (sourceMetadata.reexportAll) {
-    const statement = buildNamespaceReexport(metadata, cloneNode(srcNamespace), constantReexports);
+    const statement = buildNamespaceReexport(metadata, _core.types.cloneNode(srcNamespace), constantReexports);
     statement.loc = sourceMetadata.reexportAll.loc;
     statements.push(statement);
   }
   return statements;
 }
 const ReexportTemplate = {
-  constant: _template.default.statement`EXPORTS.EXPORT_NAME = NAMESPACE_IMPORT;`,
-  constantComputed: _template.default.statement`EXPORTS["EXPORT_NAME"] = NAMESPACE_IMPORT;`,
-  spec: _template.default.statement`
-    Object.defineProperty(EXPORTS, "EXPORT_NAME", {
-      enumerable: true,
-      get: function() {
-        return NAMESPACE_IMPORT;
-      },
-    });
+  constant: ({
+    exports,
+    exportName,
+    namespaceImport
+  }) => _core.template.statement.ast`
+      ${exports}.${exportName} = ${namespaceImport};
+    `,
+  constantComputed: ({
+    exports,
+    exportName,
+    namespaceImport
+  }) => _core.template.statement.ast`
+      ${exports}["${exportName}"] = ${namespaceImport};
+    `,
+  spec: ({
+    exports,
+    exportName,
+    namespaceImport
+  }) => _core.template.statement.ast`
+      Object.defineProperty(${exports}, "${exportName}", {
+        enumerable: true,
+        get: function() {
+          return ${namespaceImport};
+        },
+      });
     `
 };
-function buildReexportsFromMeta(meta, metadata, constantReexports) {
-  const namespace = metadata.lazy ? callExpression(identifier(metadata.name), []) : identifier(metadata.name);
+function buildReexportsFromMeta(meta, metadata, constantReexports, wrapReference) {
+  var _wrapReference2;
+  let namespace = _core.types.identifier(metadata.name);
+  namespace = (_wrapReference2 = wrapReference(namespace, metadata.wrap)) != null ? _wrapReference2 : namespace;
   const {
     stringSpecifiers
   } = meta;
   return Array.from(metadata.reexports, ([exportName, importName]) => {
-    let NAMESPACE_IMPORT = cloneNode(namespace);
+    let namespaceImport = _core.types.cloneNode(namespace);
     if (importName === "default" && metadata.interop === "node-default") {} else if (stringSpecifiers.has(importName)) {
-      NAMESPACE_IMPORT = memberExpression(NAMESPACE_IMPORT, stringLiteral(importName), true);
+      namespaceImport = _core.types.memberExpression(namespaceImport, _core.types.stringLiteral(importName), true);
     } else {
-      NAMESPACE_IMPORT = memberExpression(NAMESPACE_IMPORT, identifier(importName));
+      namespaceImport = _core.types.memberExpression(namespaceImport, _core.types.identifier(importName));
     }
     const astNodes = {
-      EXPORTS: meta.exportName,
-      EXPORT_NAME: exportName,
-      NAMESPACE_IMPORT
+      exports: meta.exportName,
+      exportName,
+      namespaceImport
     };
-    if (constantReexports || isIdentifier(NAMESPACE_IMPORT)) {
+    if (constantReexports || _core.types.isIdentifier(namespaceImport)) {
       if (stringSpecifiers.has(exportName)) {
         return ReexportTemplate.constantComputed(astNodes);
       } else {
@@ -225,9 +227,9 @@ function buildReexportsFromMeta(meta, metadata, constantReexports) {
   });
 }
 function buildESModuleHeader(metadata, enumerableModuleMeta = false) {
-  return (enumerableModuleMeta ? _template.default.statement`
+  return (enumerableModuleMeta ? _core.template.statement`
         EXPORTS.__esModule = true;
-      ` : _template.default.statement`
+      ` : _core.template.statement`
         Object.defineProperty(EXPORTS, "__esModule", {
           value: true,
         });
@@ -236,7 +238,7 @@ function buildESModuleHeader(metadata, enumerableModuleMeta = false) {
   });
 }
 function buildNamespaceReexport(metadata, namespace, constantReexports) {
-  return (constantReexports ? _template.default.statement`
+  return (constantReexports ? _core.template.statement`
         Object.keys(NAMESPACE).forEach(function(key) {
           if (key === "default" || key === "__esModule") return;
           VERIFY_NAME_LIST;
@@ -244,7 +246,7 @@ function buildNamespaceReexport(metadata, namespace, constantReexports) {
 
           EXPORTS[key] = NAMESPACE[key];
         });
-      ` : _template.default.statement`
+      ` : _core.template.statement`
         Object.keys(NAMESPACE).forEach(function(key) {
           if (key === "default" || key === "__esModule") return;
           VERIFY_NAME_LIST;
@@ -260,7 +262,7 @@ function buildNamespaceReexport(metadata, namespace, constantReexports) {
     `)({
     NAMESPACE: namespace,
     EXPORTS: metadata.exportName,
-    VERIFY_NAME_LIST: metadata.exportNameListName ? (0, _template.default)`
+    VERIFY_NAME_LIST: metadata.exportNameListName ? (0, _core.template)`
             if (Object.prototype.hasOwnProperty.call(EXPORTS_LIST, key)) return;
           `({
       EXPORTS_LIST: metadata.exportNameListName
@@ -289,14 +291,14 @@ function buildExportNameListDeclaration(programPath, metadata) {
   delete exportedVars.default;
   return {
     name: name.name,
-    statement: variableDeclaration("var", [variableDeclarator(name, valueToNode(exportedVars))])
+    statement: _core.types.variableDeclaration("var", [_core.types.variableDeclarator(name, _core.types.valueToNode(exportedVars))])
   };
 }
-function buildExportInitializationStatements(programPath, metadata, constantReexports = false, noIncompleteNsImportDetection = false) {
+function buildExportInitializationStatements(programPath, metadata, wrapReference, constantReexports = false, noIncompleteNsImportDetection = false) {
   const initStatements = [];
   for (const [localName, data] of metadata.local) {
     if (data.kind === "import") {} else if (data.kind === "hoisted") {
-      initStatements.push([data.names[0], buildInitStatement(metadata, data.names, identifier(localName))]);
+      initStatements.push([data.names[0], buildInitStatement(metadata, data.names, _core.types.identifier(localName))]);
     } else if (!noIncompleteNsImportDetection) {
       for (const exportName of data.names) {
         initStatements.push([exportName, null]);
@@ -305,7 +307,7 @@ function buildExportInitializationStatements(programPath, metadata, constantReex
   }
   for (const data of metadata.source.values()) {
     if (!constantReexports) {
-      const reexportsStatements = buildReexportsFromMeta(metadata, data, false);
+      const reexportsStatements = buildReexportsFromMeta(metadata, data, false, wrapReference);
       const reexports = [...data.reexports.keys()];
       for (let i = 0; i < reexportsStatements.length; i++) {
         initStatements.push([reexports[i], reexportsStatements[i]]);
@@ -351,25 +353,45 @@ function buildExportInitializationStatements(programPath, metadata, constantReex
   return results;
 }
 const InitTemplate = {
-  computed: _template.default.expression`EXPORTS["NAME"] = VALUE`,
-  default: _template.default.expression`EXPORTS.NAME = VALUE`
+  computed: ({
+    exports,
+    name,
+    value
+  }) => _core.template.expression.ast`${exports}["${name}"] = ${value}`,
+  default: ({
+    exports,
+    name,
+    value
+  }) => _core.template.expression.ast`${exports}.${name} = ${value}`,
+  define: ({
+    exports,
+    name,
+    value
+  }) => _core.template.expression.ast`
+      Object.defineProperty(${exports}, "${name}", {
+        enumerable: true,
+        value: void 0,
+        writable: true
+      })["${name}"] = ${value}`
 };
 function buildInitStatement(metadata, exportNames, initExpr) {
   const {
     stringSpecifiers,
-    exportName: EXPORTS
+    exportName: exports
   } = metadata;
-  return expressionStatement(exportNames.reduce((acc, exportName) => {
+  return _core.types.expressionStatement(exportNames.reduce((value, name) => {
     const params = {
-      EXPORTS,
-      NAME: exportName,
-      VALUE: acc
+      exports,
+      name,
+      value
     };
-    if (stringSpecifiers.has(exportName)) {
-      return InitTemplate.computed(params);
-    } else {
-      return InitTemplate.default(params);
+    if (name === "__proto__") {
+      return InitTemplate.define(params);
     }
+    if (stringSpecifiers.has(name)) {
+      return InitTemplate.computed(params);
+    }
+    return InitTemplate.default(params);
   }, initExpr));
 }
 

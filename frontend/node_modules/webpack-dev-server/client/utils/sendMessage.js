@@ -1,6 +1,6 @@
 /* global __resourceQuery WorkerGlobalScope */
-// Send messages to the outside, so plugins can consume it.
 
+// Send messages to the outside, so plugins can consume it.
 /**
  * @param {string} type
  * @param {any} [data]
@@ -13,5 +13,4 @@ function sendMsg(type, data) {
     }, "*");
   }
 }
-
 export default sendMsg;

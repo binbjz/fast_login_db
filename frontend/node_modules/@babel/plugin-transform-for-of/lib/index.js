@@ -6,7 +6,8 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var _helperPluginUtils = require("@babel/helper-plugin-utils");
 var _core = require("@babel/core");
-var _noHelperImplementation = require("./no-helper-implementation");
+var _noHelperImplementation = require("./no-helper-implementation.js");
+var _helperSkipTransparentExpressionWrappers = require("@babel/helper-skip-transparent-expression-wrappers");
 function buildLoopBody(path, declar, newBody) {
   let block;
   const bodyPath = path.get("body");
@@ -19,7 +20,7 @@ function buildLoopBody(path, declar, newBody) {
   }
   return block;
 }
-var _default = (0, _helperPluginUtils.declare)((api, options) => {
+var _default = exports.default = (0, _helperPluginUtils.declare)((api, options) => {
   var _options$assumeArray, _options$allowArrayLi, _api$assumption;
   api.assertVersion(7);
   {
@@ -34,8 +35,10 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
     if (assumeArray === true && allowArrayLike === true) {
       throw new Error(`The assumeArray and allowArrayLike options cannot be used together in @babel/plugin-transform-for-of`);
     }
-    if (allowArrayLike && /^7\.\d\./.test(api.version)) {
-      throw new Error(`The allowArrayLike is only supported when using @babel/core@^7.10.0`);
+    {
+      if (allowArrayLike && /^7\.\d\./.test(api.version)) {
+        throw new Error(`The allowArrayLike is only supported when using @babel/core@^7.10.0`);
+      }
     }
   }
   const iterableIsArray = (_options$assumeArray = options.assumeArray) != null ? _options$assumeArray : !options.loose && api.assumption("iterableIsArray");
@@ -54,14 +57,17 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
           } = path;
           const {
             left,
-            right,
             await: isAwait
           } = path.node;
           if (isAwait) {
             return;
           }
+          const right = (0, _helperSkipTransparentExpressionWrappers.skipTransparentExprWrapperNodes)(path.node.right);
           const i = scope.generateUidIdentifier("i");
           let array = scope.maybeGenerateMemoised(right, true);
+          if (!array && _core.types.isIdentifier(right) && path.get("body").scope.hasOwnBinding(right.name)) {
+            array = scope.generateUidIdentifier("arr");
+          }
           const inits = [_core.types.variableDeclarator(i, _core.types.numericLiteral(0))];
           if (array) {
             inits.push(_core.types.variableDeclarator(array, right));
@@ -142,9 +148,11 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
           path.replaceWith(_ForOfStatementArray(path));
           return;
         }
-        if (!state.availableHelper(builder.helper)) {
-          (0, _noHelperImplementation.default)(skipIteratorClosing, path, state);
-          return;
+        {
+          if (!state.availableHelper(builder.helper)) {
+            (0, _noHelperImplementation.default)(skipIteratorClosing, path, state);
+            return;
+          }
         }
         const {
           node,
@@ -182,6 +190,5 @@ var _default = (0, _helperPluginUtils.declare)((api, options) => {
     }
   };
 });
-exports.default = _default;
 
 //# sourceMappingURL=index.js.map

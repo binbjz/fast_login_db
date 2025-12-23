@@ -1,4 +1,4 @@
-# unicode-canonical-property-names-ecmascript [![Build status](https://travis-ci.org/mathiasbynens/unicode-canonical-property-names-ecmascript.svg?branch=main)](https://travis-ci.org/mathiasbynens/unicode-canonical-property-names-ecmascript) [![unicode-canonical-property-names-ecmascript on npm](https://img.shields.io/npm/v/unicode-canonical-property-names-ecmascript)](https://www.npmjs.com/package/unicode-canonical-property-names-ecmascript)
+# unicode-canonical-property-names-ecmascript [![unicode-canonical-property-names-ecmascript on npm](https://img.shields.io/npm/v/unicode-canonical-property-names-ecmascript)](https://www.npmjs.com/package/unicode-canonical-property-names-ecmascript)
 
 _unicode-canonical-property-names-ecmascript_ exports the set of canonical Unicode property names that are supported in [ECMAScript RegExp property escapes](https://github.com/tc39/proposal-regexp-unicode-property-escapes).
 
