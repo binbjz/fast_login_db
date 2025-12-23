@@ -21,7 +21,18 @@ export default {
         const message = response?.data?.msg || '登录成功';
         this.$emit('toast', { type: 'success', message });
       } catch (error) {
-        const message = error?.response?.data?.detail || error?.message || '请求失败';
+        const detail = error?.response?.data?.detail;
+        let message = '请求失败';
+        if (Array.isArray(detail)) {
+          const messages = detail.map((item) => item?.msg).filter(Boolean);
+          if (messages.length) {
+            message = messages.join('；');
+          }
+        } else if (typeof detail === 'string') {
+          message = detail;
+        } else if (error?.message) {
+          message = error.message;
+        }
         this.$emit('toast', { type: 'error', message: `登录失败: ${message}` });
       }
     },

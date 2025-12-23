@@ -20,7 +20,7 @@ services:
       context: ./backend
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:pg-auth@db:5432/postgres
-      RESET_DB: "false"
+      RESET_DB: "${RESET_DB:-false}"
       CORS_ALLOW_ALL: "true"
     depends_on:
       db:
