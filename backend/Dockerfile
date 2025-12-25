@@ -5,8 +5,18 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml ./
+RUN python - <<'PY'
+import subprocess
+import tomllib
+
+with open("pyproject.toml", "rb") as handle:
+    data = tomllib.load(handle)
+
+deps = data.get("project", {}).get("dependencies", [])
+if deps:
+    subprocess.check_call(["pip", "install", "--no-cache-dir", *deps])
+PY
 
 COPY . .
 EXPOSE 8000
