@@ -21,6 +21,11 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:pg-auth@db:5432/postgres
       RESET_DB: "${RESET_DB:-false}"
+      ALLOW_RESET_DB: "${ALLOW_RESET_DB:-false}"
+      AUTO_CREATE_TABLES: "${AUTO_CREATE_TABLES:-true}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      SQL_ECHO: "${SQL_ECHO:-false}"
+      SESSION_TTL_SECONDS: "${SESSION_TTL_SECONDS:-1800}"
       CORS_ALLOW_ALL: "true"
     depends_on:
       db:
@@ -38,6 +43,7 @@ services:
     environment:
       CHOKIDAR_USEPOLLING: "true"
       VUE_APP_API_BASE_URL: "http://localhost:8000"
+      VITE_API_BASE_URL: "http://localhost:8000"
     volumes:
       - ./frontend:/app
       - /app/node_modules

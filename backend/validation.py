@@ -164,14 +164,17 @@ def _password_class_count(password: str) -> int:
     return classes
 
 
-def validate_username(value: str) -> str:
+def normalize_username(value: str) -> str:
     if not isinstance(value, str):
         raise ValueError("用户名必须是字符串")
 
     username = value.strip()
     if not username:
         raise ValueError("用户名不能为空")
+    return username
 
+
+def _validate_username_common(username: str) -> str:
     config = get_validation_config()
 
     if not (config.username_min_len <= len(username) <= config.username_max_len):
@@ -180,12 +183,25 @@ def validate_username(value: str) -> str:
     if not config.username_pattern.fullmatch(username):
         raise ValueError(config.username_charset_desc)
 
+    return username
+
+
+def validate_username(value: str) -> str:
+    username = normalize_username(value)
+    _validate_username_common(username)
+
     normalized = username.casefold()
+    config = get_validation_config()
     for reserved in config.username_reserved:
-        if reserved and reserved in normalized:
+        if reserved and reserved == normalized:
             raise ValueError("用户名包含保留词，不能使用")
 
     return username
+
+
+def validate_login_username(value: str) -> str:
+    username = normalize_username(value)
+    return _validate_username_common(username)
 
 
 def validate_password(value: str) -> str:

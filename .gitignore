@@ -6,3 +6,4 @@ build/
 *.egg-info/
 uv.lock
 **/node_modules/
+**/dist/

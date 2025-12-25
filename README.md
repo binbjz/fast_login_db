@@ -3,9 +3,9 @@
 ---
 
 ### Start the FastAPI backend  
-Open a command line window in the backend project directory and run the command  
+Open a command line window in the project root directory and run the command  
 ```sh
-uvicorn main:app --reload
+uvicorn backend.main:app --reload
 ```
 
 ### Start the Vue.js frontend  
@@ -33,3 +33,5 @@ docker compose up --build
 Then open the app at:
 - Frontend: http://127.0.0.1:8080
 - OpenAPI: http://127.0.0.1:8000/docs
+
+More backend runtime/config details are documented in `backend/README.md`.
