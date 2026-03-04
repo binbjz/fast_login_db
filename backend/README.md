@@ -21,6 +21,8 @@ OpenAPI docs: `http://127.0.0.1:8000/docs`
 - `POST /login/`: returns `{ msg, user_id, username, access_token, token_type, expires_in, expires_at }`
 - `GET /me`: requires `Authorization: Bearer <access_token>`, returns `{ user_id, username, expires_in, expires_at }`
 - `POST /logout/`: requires `Authorization: Bearer <access_token>`, invalidates current token
+- In Swagger UI (`/docs`), fill `X-Authorization` with `Bearer <access_token>` for `/me` and `/logout/`.
+- Non-docs clients should still use standard `Authorization: Bearer <access_token>`.
 
 Session notes:
 - Session TTL is controlled by `SESSION_TTL_SECONDS` (default `1800`, minimum `60`).
@@ -50,6 +52,11 @@ Validation policy:
 - `PASSWORD_MIN_CLASSES`
 - `WEAK_PASSWORDS`
 - `WEAK_PASSWORDS_FILE`
+
+Schema note:
+- `users.username` 数据库列宽固定为 `VARCHAR(64)`。
+- `USERNAME_MIN_LEN` 和 `USERNAME_MAX_LEN` 不能超过 `64`，超出会在启动时报错。
+- 当 `AUTO_CREATE_TABLES=true`（或 `RESET_DB=true`）时，若历史库列宽小于 `64`，启动会自动扩容。
 
 ## Registration validation defaults
 

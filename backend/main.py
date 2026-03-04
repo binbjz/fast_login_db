@@ -6,11 +6,11 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db, setup_db
@@ -110,7 +110,7 @@ def _create_session(user_id: int, username: str) -> tuple[str, AuthSession]:
     return token, session
 
 
-def _extract_bearer_token(authorization: str | None) -> str:
+def _extract_bearer_token(authorization: str) -> str:
     if not authorization:
         raise HTTPException(status_code=401, detail="未登录或会话已过期")
 
@@ -120,7 +120,7 @@ def _extract_bearer_token(authorization: str | None) -> str:
     return token.strip()
 
 
-def _require_session(authorization: str | None) -> tuple[str, AuthSession]:
+def _require_session(authorization: str) -> tuple[str, AuthSession]:
     token = _extract_bearer_token(authorization)
     now = _utc_now()
     _cleanup_expired_sessions(now)
@@ -131,6 +131,12 @@ def _require_session(authorization: str | None) -> tuple[str, AuthSession]:
         SESSIONS.pop(token, None)
         raise HTTPException(status_code=401, detail="未登录或会话已过期")
     return token, session
+
+
+def _resolve_authorization_header(request: Request, x_authorization: str) -> str:
+    # `Authorization` 头在 OpenAPI 中是保留头名，Swagger 参数模式下可能不会发送。
+    # 兼容标准客户端的 Authorization，同时提供 X-Authorization 供 /docs 手工测试。
+    return request.headers.get("Authorization", "") or x_authorization
 
 
 @app.post("/users/", response_model=UserInDB)
@@ -151,6 +157,9 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
         db.add(db_user)
         await db.commit()
         await db.refresh(db_user)
+    except DataError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="用户信息不符合数据库约束")
     except IntegrityError:
         await db.rollback()
         raise HTTPException(status_code=400, detail="该用户已存在")
@@ -188,7 +197,11 @@ async def login(request: UserLogin, db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/me", response_model=SessionInfo)
-async def get_current_user_info(authorization: str | None = Header(default=None)):
+async def get_current_user_info(
+    request: Request,
+    x_authorization: str = Header(default="", alias="X-Authorization"),
+):
+    authorization = _resolve_authorization_header(request, x_authorization)
     _, session = _require_session(authorization)
     expires_in = max(int((session.expires_at - _utc_now()).total_seconds()), 0)
     return SessionInfo(
@@ -200,7 +213,11 @@ async def get_current_user_info(authorization: str | None = Header(default=None)
 
 
 @app.post("/logout/", response_model=LogoutResult)
-async def logout(authorization: str | None = Header(default=None)):
+async def logout(
+    request: Request,
+    x_authorization: str = Header(default="", alias="X-Authorization"),
+):
+    authorization = _resolve_authorization_header(request, x_authorization)
     token, _ = _require_session(authorization)
     SESSIONS.pop(token, None)
     return LogoutResult(msg="已退出登录")

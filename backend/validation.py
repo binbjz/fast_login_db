@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Iterable, Set
 
+from backend.limits import USERNAME_DB_MAX_LEN
+
 
 DEFAULT_RESERVED_USERNAMES = {
     "admin",
@@ -96,7 +98,17 @@ class ValidationConfig:
 @lru_cache(maxsize=1)
 def get_validation_config() -> ValidationConfig:
     username_min_len = _int_env("USERNAME_MIN_LEN", 4, minimum=1)
+    if username_min_len > USERNAME_DB_MAX_LEN:
+        raise RuntimeError(
+            f"USERNAME_MIN_LEN={username_min_len} 不能大于数据库用户名长度上限 {USERNAME_DB_MAX_LEN}"
+        )
+
     username_max_len = _int_env("USERNAME_MAX_LEN", 20, minimum=username_min_len)
+    if username_max_len > USERNAME_DB_MAX_LEN:
+        raise RuntimeError(
+            f"USERNAME_MAX_LEN={username_max_len} 不能大于数据库用户名长度上限 {USERNAME_DB_MAX_LEN}"
+        )
+
     allow_cjk = _bool_env("USERNAME_ALLOW_CJK", False)
     pattern_override = os.getenv("USERNAME_PATTERN", "").strip()
     charset_override = os.getenv("USERNAME_CHARSET_DESC", "").strip()
@@ -201,7 +213,13 @@ def validate_username(value: str) -> str:
 
 def validate_login_username(value: str) -> str:
     username = normalize_username(value)
-    return _validate_username_common(username)
+    if len(username) > USERNAME_DB_MAX_LEN:
+        raise ValueError(f"用户名长度不能超过 {USERNAME_DB_MAX_LEN} 个字符")
+
+    config = get_validation_config()
+    if not config.username_pattern.fullmatch(username):
+        raise ValueError(config.username_charset_desc)
+    return username
 
 
 def validate_password(value: str) -> str:
