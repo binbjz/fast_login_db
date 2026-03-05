@@ -27,7 +27,7 @@ Starting the FastAPI backend and Vue.js frontend for a typical web application p
 ### Start everything with Docker (frontend + backend + database)
 
 ```sh
-docker compose up --build
+docker compose up -d --build
 ```
 
 Then open the app at:
